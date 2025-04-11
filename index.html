@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aplikasi Diskon</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .container {
+      background: #fff; padding: 30px 25px; margin: 30px auto;
+      width: 100%; max-width: 600px;
+      border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input, button {
+      width: 100%; padding: 12px; margin: 8px 0;
+      border-radius: 6px; border: 1px solid #ccc; font-size: 16px;
+    }
+    button {
+      background: #007bff; color: #fff; border: none; font-weight: bold;
+    }
+    button:hover { background: #0056b3; }
+    .input-group { position: relative; }
+    .input-group span {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      font-weight: bold; color: #555;
+    }
+    table {
+      width: 100%; margin-top: 20px; border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd; padding: 12px; font-size: 14px;
+    }
+    th { background: #f1f1f1; }
+    .modal {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background: #fff; padding: 20px; width: 90%; max-width: 400px;
+      margin: 10% auto; text-align: center; border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Input Transaksi</h2>
+    <form id="transaksiForm">
+      <input type="text" id="kodeBarang" placeholder="Kode Barang" required />
+      <input type="text" id="produk" placeholder="Nama Produk" required />
+      <input type="text" id="harga" placeholder="Harga (Rp)" required />
+      <input type="number" id="jumlahBeli" placeholder="Jumlah Beli" required />
+      <div class="input-group">
+        <input type="number" id="diskon" placeholder="Diskon" step="0.01" required />
+        <span>%</span>
+      </div>
+      <button type="submit">Simpan</button>
+    </form>
+  </div>
+
+  <div class="container">
+    <h2>Riwayat Transaksi</h2>
+    <table>
+      <thead>
+        <tr><th>Kode</th><th>Produk</th><th>Harga</th><th>Jumlah</th><th>Diskon</th><th>Total</th><th>Aksi</th></tr>
+      </thead>
+      <tbody id="riwayatTransaksi"></tbody>
+    </table>
+  </div>
+
+  <div id="notaModal" class="modal">
+    <div class="modal-content">
+      <button onclick="closeModal()">Tutup</button>
+      <h2>Nota Pembelian</h2>
+      <div id="nota"></div>
+    </div>
+  </div>
+
+  <script>
+    const dataTransaksi = [], 
+          el = id => document.getElementById(id);
+
+    const formatRupiah = num => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const parseRupiah = val => parseFloat(val.replace(/\./g, "") || "0");
+
+    el('harga').addEventListener('input', function() {
+      this.value = formatRupiah(this.value.replace(/\D/g, ""));
+    });
+
+    el('transaksiForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const kode = el('kodeBarang').value.trim(),
+            produk = el('produk').value.trim(),
+            harga = parseRupiah(el('harga').value),
+            jumlah = parseInt(el('jumlahBeli').value),
+            diskon = parseFloat(el('diskon').value);
+
+      if (dataTransaksi.some(x => x.kode === kode)) return alert("Kode sudah ada!");
+      if (!/^\d+$/.test(kode) || diskon < 0 || diskon > 100) return alert("Input tidak valid!");
+
+      const total = harga * jumlah * (1 - diskon / 100);
+      dataTransaksi.push({ kode, produk, harga, jumlah, diskon, total });
+      renderTable(); this.reset();
+      el("riwayatTransaksi").scrollIntoView({ behavior: "smooth" });
+    });
+
+    function renderTable() {
+      el('riwayatTransaksi').innerHTML = dataTransaksi.map((x, i) => `
+        <tr>
+          <td>${x.kode}</td><td>${x.produk}</td><td>Rp ${formatRupiah(x.harga)}</td>
+          <td>${x.jumlah}</td><td>${parseFloat(x.diskon)}%</td>
+          <td>Rp ${formatRupiah(x.total.toFixed(0))}</td>
+          <td><button onclick="openModal(${i})">Nota</button></td>
+        </tr>`).join('');
+    }
+
+    function openModal(i) {
+      const x = dataTransaksi[i];
+      el("nota").innerHTML = `
+        <p><strong>Kode:</strong> ${x.kode}</p>
+        <p><strong>Produk:</strong> ${x.produk}</p>
+        <p><strong>Harga:</strong> Rp ${formatRupiah(x.harga)}</p>
+        <p><strong>Jumlah:</strong> ${x.jumlah}</p>
+        <p><strong>Diskon:</strong> ${parseFloat(x.diskon)}%</p>
+        <p><strong>Total:</strong> Rp ${formatRupiah(x.total.toFixed(0))}</p>`;
+      el("notaModal").style.display = "block";
+    }
+
+    const closeModal = () => el("notaModal").style.display = "none";
+  </script>
+</body>
+</html>
